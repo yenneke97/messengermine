@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cipher — Messenger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #1e1e2a;
+    --accent: #7c6aff;
+    --accent2: #ff6a8a;
+    --text: #e8e8f0;
+    --muted: #555568;
+    --online: #3dffb0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── AUTH ── */
+  #auth {
+    width: 380px;
+    animation: fadeUp .5s ease both;
+  }
+
+  .auth-logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .auth-logo span { color: var(--accent); }
+
+  .auth-sub {
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+    margin-bottom: 36px;
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: .85rem;
+    cursor: pointer;
+    border-radius: 7px;
+    transition: all .2s;
+  }
+
+  .auth-tab.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: .72rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .field input:focus { border-color: var(--accent); }
+
+  .auth-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: .95rem;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity .2s, transform .1s;
+  }
+
+  .auth-btn:hover { opacity: .88; }
+  .auth-btn:active { transform: scale(.98); }
+
+  .auth-error {
+    color: var(--accent2);
+    font-size: .78rem;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  /* ── APP ── */
+  #app {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: row;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .sidebar-header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sidebar-logo span { color: var(--accent); }
+
+  .me-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    color: var(--online);
+    background: rgba(61, 255, 176, .08);
+    border: 1px solid rgba(61, 255, 176, .2);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px 9px 34px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .search-wrap input:focus { border-color: var(--accent); }
+
+  .search-wrap .icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: .85rem;
+  }
+
+  .search-results {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 6px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .search-result-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: .85rem;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .search-result-item:hover { background: var(--border); }
+
+  .chats-label {
+    padding: 16px 18px 8px;
+    font-size: .65rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .chats-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 10px;
+  }
+
+  .chats-list::-webkit-scrollbar { width: 3px; }
+  .chats-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .chat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s;
+    position: relative;
+  }
+
+  .chat-item:hover { background: var(--surface2); }
+  .chat-item.active { background: rgba(124, 106, 255, .12); }
+  .chat-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .95rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  .avatar-lg {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    font-size: 1.05rem;
+  }
+
+  .chat-info { flex: 1; overflow: hidden; }
+
+  .chat-name {
+    font-size: .88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-preview {
+    font-size: .72rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+
+  .unread-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: .6rem;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 2px 7px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .sidebar-footer {
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .my-nick {
+    font-size: .8rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: .72rem;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all .2s;
+  }
+
+  .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg);
+  }
+
+  .chat-topbar {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+  }
+
+  .chat-topbar-info { flex: 1; }
+  .chat-topbar-name { font-weight: 700; font-size: 1rem; }
+  .chat-topbar-status {
+    font-size: .7rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .messages-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .messages-wrap::-webkit-scrollbar { width: 3px; }
+  .messages-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 2.5rem; opacity: .3; }
+
+  .msg-group { margin-top: 12px; }
+
+  .msg-bubble {
+    max-width: 65%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: .88rem;
+    line-height: 1.55;
+    position: relative;
+    word-break: break-word;
+  }
+
+  .msg-bubble.mine {
+    background: var(--accent);
+    color: #fff;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-bubble.theirs {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg-meta {
+    font-size: .62rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    margin-top: 4px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .msg-meta.mine { justify-content: flex-end; }
+
+  .msg-sender {
+    color: var(--accent);
+    font-size: .68rem;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+  }
+
+  .input-area {
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    background: var(--surface);
+  }
+
+  .input-area textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: .88rem;
+    outline: none;
+    resize: none;
+    max-height: 120px;
+    transition: border-color .2s;
+    line-height: 1.5;
+  }
+
+  .input-area textarea:focus { border-color: var(--accent); }
+
+  .send-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+  }
+
+  .send-btn:hover { opacity: .85; }
+  .send-btn:active { transform: scale(.93); }
+
+  .no-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--muted);
+  }
+
+  .no-chat-logo {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--surface2);
+  }
+
+  .no-chat-logo span { color: var(--border); }
+
+  .no-chat p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    text-align: center;
+  }
+
+  /* Dot pattern bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(124,106,255,.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #auth, #app { position: relative; z-index: 1; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .app-anim { animation: fadeUp .4s ease both; }
+
+  /* Avatar color per nick */
+  .av-a { background: rgba(124,106,255,.18); color: var(--accent); }
+  .av-b { background: rgba(255,106,138,.18); color: var(--accent2); }
+  .av-c { background: rgba(61,255,176,.15); color: var(--online); }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .sidebar { width: 220px; min-width: 220px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH ══ -->
+<div id="auth">
+  <div class="auth-logo">Cipher<span>.</span></div>
+  <div class="auth-sub">// end-to-end encrypted messenger</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="setTab('login')">Войти</button>
+      <button class="auth-tab" onclick="setTab('register')">Регистрация</button>
+    </div>
+    <div class="field">
+      <label>Никнейм</label>
+      <input type="text" id="f-nick" placeholder="your_nick" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Пароль</label>
+      <input type="password" id="f-pass" placeholder="••••••••">
+    </div>
+    <button class="auth-btn" onclick="authSubmit()">Продолжить →</button>
+    <div class="auth-error" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <!-- Sidebar -->
+  <div class="sidebar app-anim">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        Cipher<span>.</span>
+        <span class="me-tag" id="me-tag">@nick</span>
+      </div>
+      <div class="search-wrap">
+        <span class="icon">⌕</span>
+        <input type="text" id="search-input" placeholder="Найти пользователя..." oninput="onSearch(this.value)" autocomplete="off">
+        <div class="search-results" id="search-results"></div>
+      </div>
+    </div>
+    <div class="chats-label">// диалоги</div>
+    <div class="chats-list" id="chats-list"></div>
+    <div class="sidebar-footer">
+      <span class="my-nick" id="my-nick-label">@—</span>
+      <button class="logout-btn" onclick="logout()">выйти</button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area app-anim" id="chat-area">
+    <div class="no-chat" id="no-chat">
+      <div class="no-chat-logo">C<span>.</span></div>
+      <p>Найди пользователя слева<br>или выбери диалог</p>
+    </div>
+    <div id="active-chat" style="display:none;flex-direction:column;height:100%;">
+      <div class="chat-topbar">
+        <div class="avatar avatar-lg" id="chat-avatar">?</div>
+        <div class="chat-topbar-info">
+          <div class="chat-topbar-name" id="chat-name">—</div>
+          <div class="chat-topbar-status">в сети</div>
+        </div>
+      </div>
+      <div class="messages-wrap" id="messages-wrap">
+        <div class="empty-state" id="empty-msg">
+          <div class="empty-icon">💬</div>
+          <span>Напиши первым</span>
+        </div>
+      </div>
+      <div class="input-area">
+        <textarea id="msg-input" placeholder="Сообщение..." rows="1" onkeydown="onKey(event)" oninput="autoGrow(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ╔══════════════════════════════════════╗
+// ║  ВСТАВЬ СВОЙ FIREBASE CONFIG СЮДА   ║
+// ╚══════════════════════════════════════╝
+const firebaseConfig = {
+  apiKey: "AIzaSyASKX3gIrzGNBeRLQFxAsK07d0OwIVeJ7Y",
+  authDomain: "swagmessenger-a7b49.firebaseapp.com",
+  databaseURL: "https://swagmessenger-a7b49-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "swagmessenger-a7b49",
+  storageBucket: "swagmessenger-a7b49.firebasestorage.app",
+  messagingSenderId: "254136367486",
+  appId: "1:254136367486:web:5aa38f8e7a34fda7099b2f",
+  measurementId: "G-FF6VSV3FDT"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── State ──
+let ME = null;
+let currentChat = null;
+let unsubMessages = null;
+let openChats = {}; // nick → last message info
+let unsubChats = [];
+
+// ── Auth helpers ──
+function hashPass(p) {
+  let h = 0;
+  for (let i = 0; i < p.length; i++) h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+  return h.toString(16);
+}
+
+function avatarColor(nick) {
+  const c = nick.charCodeAt(0) % 3;
+  return ['av-a','av-b','av-c'][c];
+}
+
+function getInitial(nick) { return nick[0].toUpperCase(); }
+
+// ── Tab switching ──
+window.setTab = (t) => {
+  document.querySelectorAll('.auth-tab').forEach((b,i) => {
+    b.classList.toggle('active', (t==='login' && i===0) || (t==='register' && i===1));
+  });
+  window._authMode = t;
+};
+window._authMode = 'login';
+
+// ── Auth submit ──
+window.authSubmit = async () => {
+  const nick = document.getElementById('f-nick').value.trim().toLowerCase();
+  const pass = document.getElementById('f-pass').value;
+  const err  = document.getElementById('auth-err');
+  err.textContent = '';
+
+  if (!nick || !pass) { err.textContent = 'Заполни все поля'; return; }
+  if (!/^[a-z0-9_]{2,20}$/.test(nick)) { err.textContent = 'Ник: латиница, цифры, _, 2-20 симв.'; return; }
+  if (pass.length < 4) { err.textContent = 'Пароль минимум 4 символа'; return; }
+
+  const hash = hashPass(pass);
+  const userRef = doc(db, 'users', nick);
+
+  if (window._authMode === 'register') {
+    const snap = await getDoc(userRef);
+    if (snap.exists()) { err.textContent = 'Ник уже занят'; return; }
+    await setDoc(userRef, { nick, hash, created: serverTimestamp() });
+    enterApp(nick);
+  } else {
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) { err.textContent = 'Пользователь не найден'; return; }
+    if (snap.data().hash !== hash) { err.textContent = 'Неверный пароль'; return; }
+    enterApp(nick);
+  }
+};
+
+// ── Enter app ──
+function enterApp(nick) {
+  ME = nick;
+  localStorage.setItem('cipher_nick', nick);
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('me-tag').textContent = '@' + nick;
+  document.getElementById('my-nick-label').textContent = '@' + nick;
+  loadMyChats();
+}
+
+// ── Logout ──
+window.logout = () => {
+  localStorage.removeItem('cipher_nick');
+  ME = null; currentChat = null;
+  if (unsubMessages) unsubMessages();
+  unsubChats.forEach(u => u());
+  unsubChats = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth').style.display = 'block';
+  document.getElementById('chats-list').innerHTML = '';
+};
+
+// ── Search ──
+window.onSearch = async (val) => {
+  const box = document.getElementById('search-results');
+  val = val.trim().toLowerCase();
+  if (!val) { box.style.display='none'; return; }
+
+  const snap = await getDoc(doc(db,'users', val));
+  box.style.display = 'block';
+  if (snap.exists() && snap.data().nick !== ME) {
+    const u = snap.data();
+    box.innerHTML = `<div class="search-result-item" onclick="openChat('${u.nick}')">
+      <div class="avatar ${avatarColor(u.nick)}">${getInitial(u.nick)}</div>
+      <span>${u.nick}</span>
+    </div>`;
+  } else {
+    box.innerHTML = `<div class="search-result-item" style="color:var(--muted)">не найдено</div>`;
+  }
+};
+
+// ── Chat ID ──
+function chatId(a, b) {
+  return [a, b].sort().join('__');
+}
+
+// ── Open chat ──
+window.openChat = (nick) => {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').style.display = 'none';
+
+  currentChat = nick;
+  document.getElementById('no-chat').style.display = 'none';
+  const ac = document.getElementById('active-chat');
+  ac.style.display = 'flex';
+  document.getElementById('chat-name').textContent = nick;
+  const av = document.getElementById('chat-avatar');
+  av.textContent = getInitial(nick);
+  av.className = 'avatar avatar-lg ' + avatarColor(nick);
+
+  // highlight in sidebar
+  document.querySelectorAll('.chat-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.nick === nick);
+  });
+
+  loadMessages(nick);
+};
+
+// ── Load messages ──
+function loadMessages(nick) {
+  if (unsubMessages) unsubMessages();
+  const cid = chatId(ME, nick);
+  const q = query(collection(db,'chats', cid,'messages'), orderBy('ts'));
+  unsubMessages = onSnapshot(q, snap => {
+    const wrap = document.getElementById('messages-wrap');
+    const msgs = [];
+    snap.forEach(d => msgs.push({id:d.id,...d.data()}));
+    renderMessages(msgs, nick);
+  });
+}
+
+// ── Render messages ──
+function renderMessages(msgs, nick) {
+  const wrap = document.getElementById('messages-wrap');
+  if (msgs.length === 0) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><span>Напиши первым</span></div>`;
+    return;
+  }
+  wrap.innerHTML = msgs.map(m => {
+    const mine = m.from === ME;
+    const time = m.ts ? new Date(m.ts.seconds*1000).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `
+      <div class="msg-group">
+        ${!mine ? `<div class="msg-sender">${m.from}</div>` : ''}
+        <div class="msg-bubble ${mine?'mine':'theirs'}">${escHtml(m.text)}</div>
+        <div class="msg-meta ${mine?'mine':''}"><span>${time}</span></div>
+      </div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+
+  // add chat to sidebar if not present
+  addToSidebar(nick, msgs[msgs.length-1]);
+}
+
+// ── Send message ──
+window.sendMessage = async () => {
+  if (!currentChat) return;
+  const inp = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = '';
+
+  const cid = chatId(ME, currentChat);
+  await addDoc(collection(db,'chats',cid,'messages'), {
+    from: ME,
+    to: currentChat,
+    text,
+    ts: serverTimestamp()
+  });
+  // track participants
+  await setDoc(doc(db,'chats',cid,'meta','info'), {
+    users: [ME, currentChat].sort()
+  }, {merge:true});
+};
+
+window.onKey = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+};
+
+window.autoGrow = (el) => {
+  el.style.height = '';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+};
+
+// ── Load my chats from Firestore ──
+async function loadMyChats() {
+  // We query chats where user is a participant via meta/info
+  // Since Firestore can't query subcollection easily, we track in top-level 'userChats'
+  const q = query(collection(db, 'userChats'), where('users','array-contains', ME));
+  const unsub = onSnapshot(q, snap => {
+    snap.forEach(d => {
+      const data = d.data();
+      const other = data.users.find(u => u !== ME);
+      if (other && !openChats[other]) {
+        openChats[other] = true;
+        addToSidebar(other, null);
+        listenLastMsg(other);
+      }
+    });
+  });
+  unsubChats.push(unsub);
+}
+
+function listenLastMsg(nick) {
+  const cid = chatId(ME, nick);
+  const q = query(collection(db,'chats',cid,'messages'), orderBy('ts','desc'));
+  const unsub = onSnapshot(q, snap => {
+    const msgs = [];
+    snap.forEach(d => msgs.push(d.data()));
+    if (msgs.length) addToSidebar(nick, msgs[0]);
+  });
+  unsubChats.push(unsub);
+}
+
+// ── Sidebar ──
+function addToSidebar(nick, lastMsg) {
+  const list = document.getElementById('chats-list');
+  let item = list.querySelector(`[data-nick="${nick}"]`);
+  const preview = lastMsg ? truncate(lastMsg.text, 32) : '...';
+  if (!item) {
+    item = document.createElement('div');
+    item.className = 'chat-item';
+    item.dataset.nick = nick;
+    item.onclick = () => openChat(nick);
+    list.prepend(item);
+  }
+  item.innerHTML = `
+    <div class="avatar ${avatarColor(nick)}">${getInitial(nick)}</div>
+    <div class="chat-info">
+      <div class="chat-name">${nick}</div>
+      <div class="chat-preview">${escHtml(preview)}</div>
+    </div>`;
+  if (currentChat === nick) item.classList.add('active');
+
+  // persist chat membership
+  const cid = chatId(ME, nick);
+  setDoc(doc(db,'userChats',cid), { users: [ME, nick].sort() }, {merge:true});
+}
+
+// ── Helpers ──
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function truncate(s, n) {
+  return s && s.length > n ? s.slice(0,n)+'…' : s||'';
+}
+
+// ── Auto login ──
+const saved = localStorage.getItem('cipher_nick');
+if (saved) {
+  document.getElementById('f-nick').value = saved;
+  // Just show form, user needs to re-enter password for security
+}
+
+</script>
+</body>
+</html>
